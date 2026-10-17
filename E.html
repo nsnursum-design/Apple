@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Apple of Fortune - FD44 Sync Edition</title>
+
+  <!-- Firebase App SDK & Realtime Database SDK (Matched with FD44) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #010806;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    .game-screen {
+      position: relative;
+      width: 100%;
+      max-width: 412px;
+      height: 100vh;
+      max-height: 890px;
+      background: radial-gradient(circle at 50% 10%, #174b3a 0%, #0c2b21 45%, #04140e 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(0,0,0,0.95);
+    }
+
+    .sun-light-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: 
+        linear-gradient(130deg, rgba(255, 245, 190, 0.16) 0%, transparent 45%),
+        radial-gradient(ellipse at 85% 30%, rgba(135, 235, 85, 0.22) 0%, transparent 55%),
+        radial-gradient(circle at 15% 75%, rgba(20, 75, 50, 0.6) 0%, transparent 50%);
+      z-index: 1;
+    }
+
+    #fireflyCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .forest-leaves {
+      position: absolute;
+      bottom: 130px;
+      right: -25px;
+      width: 290px;
+      height: 250px;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 100% 100%, rgba(5, 35, 22, 0.98) 0%, rgba(7, 45, 28, 0.65) 55%, transparent 75%);
+      z-index: 3;
+    }
+
+    .top-header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px 4px;
+    }
+
+    .glass-icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: transform 0.1s, background 0.2s;
+    }
+    .glass-icon-btn:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .glass-balance-capsule {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.55);
+      border-radius: 22px;
+      padding: 3px 4px 3px 15px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      gap: 10px;
+    }
+    .balance-val-text {
+      font-size: 15px;
+      font-weight: 800;
+      color: #ffd700;
+      letter-spacing: 0.5px;
+    }
+    .add-coin-btn {
+      background: linear-gradient(180deg, #ffd359 0%, #e59d18 100%);
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 18px;
+      font-weight: 900;
+      color: #3b2002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .top-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bonus-icon-badge {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .orchard-title-header {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: -2px;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+    }
+
+    .glass-board-frame {
+      position: relative;
+      z-index: 5;
+      flex: 1;
+      margin: 0 10px 6px;
+      background: rgba(10, 32, 24, 0.42);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.25),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.6),
+        0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column-reverse;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px 8px 10px;
+      gap: 7px;
+      scrollbar-width: none;
+    }
+    .glass-board-frame::-webkit-scrollbar {
+      display: none;
+    }
+
+    .grid-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.25s ease;
+      opacity: 0.42;
+    }
+    .grid-row.active {
+      opacity: 1;
+      transform: scale(1.015);
+    }
+    .grid-row.cleared {
+      opacity: 0.88;
+    }
+
+    .step-badge {
+      width: 44px;
+      height: 32px;
+      border-radius: 16px;
+      background: #0d2f23;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #65927e;
+      flex-shrink: 0;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+    }
+    .grid-row.active .step-badge {
+      background: #74cc34;
+      color: #0c2b05;
+      font-weight: 900;
+      border-color: #a4fa5b;
+      box-shadow: 0 0 16px rgba(116, 204, 52, 0.8), inset 0 2px 4px rgba(255,255,255,0.6);
+    }
+    .grid-row.cleared .step-badge {
+      background: #1c5641;
+      color: #55f1b5;
+    }
+
+    .tiles-row-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      flex: 1;
+    }
+
+    .wood-disc-item {
+      aspect-ratio: 1;
+      position: relative;
+      border-radius: 50%;
+      cursor: pointer;
+      perspective: 700px;
+    }
+
+    .wood-disc-shell {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .wood-disc-item.revealed .wood-disc-shell {
+      transform: rotateY(180deg);
+    }
+
+    .disc-surface {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .disc-front {
+      background: radial-gradient(circle at 35% 25%, #a65423 0%, #793610 60%, #461d07 100%);
+      border: 2px solid #bd6931;
+      box-shadow: 
+        inset 0 2px 4px rgba(255,255,255,0.38),
+        inset 0 -3px 5px rgba(0,0,0,0.85),
+        0 4px 6px rgba(0,0,0,0.65);
+    }
+    .grid-row.active .wood-disc-item .disc-front {
+      border-color: #f7a85c;
+      box-shadow: 0 0 14px rgba(246, 185, 59, 0.55), inset 0 2px 4px rgba(255,255,255,0.6);
+      animation: floatDisc 1.5s infinite alternate ease-in-out;
+    }
+    @keyframes floatDisc {
+      0% { transform: translateY(0px) scale(1); }
+      100% { transform: translateY(-2px) scale(1.04); }
+    }
+
+    .wood-carved-emblem {
+      width: 78%;
+      height: 78%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .disc-back {
+      transform: rotateY(180deg);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.7);
+    }
+    .disc-back.fresh-apple {
+      background: radial-gradient(circle at 35% 30%, #9be253 0%, #52971a 70%, #29550b 100%);
+      border: 2px solid #b6f376;
+    }
+    .disc-back.eaten-apple {
+      background: radial-gradient(circle at 35% 30%, #4e221b 0%, #2a0f0a 70%, #150604 100%);
+      border: 2px solid #8e372b;
+    }
+
+    .glass-control-panel {
+      position: relative;
+      z-index: 10;
+      background: rgba(12, 28, 22, 0.88);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 20px 20px 0 0;
+      padding: 10px 14px 14px;
+      box-shadow: 
+        inset 0 1px 1px rgba(255, 255, 255, 0.2),
+        0 -10px 30px rgba(0,0,0,0.7);
+    }
+
+    .glass-preset-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+    .glass-preset-btn {
+      background: rgba(132, 155, 48, 0.28);
+      border: 1px solid rgba(175, 200, 75, 0.38);
+      border-radius: 9px;
+      color: #d8ea7d;
+      font-size: 13.5px;
+      font-weight: 800;
+      padding: 8px 0;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.25);
+    }
+    .glass-preset-btn:active {
+      transform: scale(0.95);
+      background: rgba(175, 200, 75, 0.55);
+      color: #fff;
+    }
+
+    .glass-mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .mode-tab-btn {
+      background: rgba(5, 22, 16, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 7px;
+      padding: 5px 0;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #8bb3a2;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .mode-tab-btn.active {
+      background: #74cc34;
+      color: #0a2604;
+      border-color: #a4fa5b;
+      box-shadow: 0 0 10px rgba(116, 204, 52, 0.6);
+    }
+
+    .stake-action-bar {
+      background: #14221b;
+      border-radius: 10px;
+      padding: 6px 6px 6px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.65);
+    }
+    .stake-values-col {
+      display: flex;
+      flex-direction: column;
+    }
+    .input-wrapper-inner {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+    .input-wrapper-inner input {
+      background: none;
+      border: none;
+      outline: none;
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      width: 90px;
+    }
+    .taka-symbol {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .range-bounds-text {
+      font-size: 9.5px;
+      color: #79978a;
+      margin-top: 1px;
+    }
+
+    .golden-stake-btn {
+      background: linear-gradient(180deg, #f7c74c 0%, #e59f20 100%);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 14.5px;
+      font-weight: 900;
+      color: #3b2203;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(229, 159, 32, 0.45);
+      transition: transform 0.1s;
+    }
+    .golden-stake-btn:active {
+      transform: scale(0.96);
+    }
+    .golden-stake-btn.take-mode {
+      background: linear-gradient(180deg, #78dd37 0%, #4fad1a 100%);
+      color: #0d3604;
+      box-shadow: 0 4px 16px rgba(110, 215, 45, 0.65);
+      animation: pulseTakeBtn 1.2s infinite;
+    }
+    @keyframes pulseTakeBtn {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+
+    .panel-footer-links {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-top: 9px;
+      padding-top: 7px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 11px;
+      font-weight: 700;
+      color: #7d968a;
+    }
+    .footer-action-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .glass-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .glass-modal-overlay.open {
+      display: flex;
+    }
+    .glass-modal-card {
+      background: linear-gradient(180deg, rgba(24, 61, 48, 0.95) 0%, rgba(12, 32, 24, 0.95) 100%);
+      border: 1.5px solid rgba(72, 207, 173, 0.35);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 310px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.88);
+    }
+    .modal-cross-btn {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.22);
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-cross-btn:active {
+      transform: scale(0.9);
+      background: rgba(255,255,255,0.25);
+    }
+    .modal-alert-title {
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      color: #f7a85c;
+    }
+    .modal-score-number {
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .modal-expl-text {
+      font-size: 12.5px;
+      color: #92b0a2;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-screen">
+    <div class="sun-light-layer"></div>
+    <canvas id="fireflyCanvas"></canvas>
+    <div class="forest-leaves"></div>
+
+    <!-- ১. টপ হেডার বার -->
+    <header class="top-header">
+      <button class="glass-icon-btn" onclick="alert('Fortune Orchard - FD44 Sync Edition')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+
+      <div class="glass-balance-capsule">
+        <span class="balance-val-text" id="userBalanceText">0.00 ৳</span>
+      </div>
+
+      <div class="top-actions-right">
+        <div class="bonus-icon-badge">
+          <svg width="25" height="25" viewBox="0 0 24 24" fill="#6db638"><polygon points="12 2 15 8 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 8 12 2"/></svg>
+        </div>
+        <button class="glass-icon-btn" onclick="showInfoGuide()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="orchard-title-header">APPLE OF FORTUNE</div>
+
+    <!-- ২. কাঁচের ফ্রেম সমন্বিত মূল গেম বোর্ড (১৪টি সারি) -->
+    <div class="glass-board-frame" id="orchardGridBoard"></div>
+
+    <!-- ৩. বটম কন্ট্রোল ডেক -->
+    <footer class="glass-control-panel">
+      <!-- MIN, X2, X/2, MAX বাটন (ফ্রস্টেড গ্লাস) -->
+      <div class="glass-preset-row">
+        <button class="glass-preset-btn" onclick="applyPreset('MIN')">MIN</button>
+        <button class="glass-preset-btn" onclick="applyPreset('X2')">X2</button>
+        <button class="glass-preset-btn" onclick="applyPreset('HALF')">X/2</button>
+        <button class="glass-preset-btn" onclick="applyPreset('MAX')">MAX</button>
+      </div>
+
+      <!-- STAKE বাটনের ঠিক উপরে মুড সিলেক্টর -->
+      <div class="glass-mode-tabs">
+        <div class="mode-tab-btn active" id="tab-normal" onclick="switchMode('normal')">Normal</div>
+        <div class="mode-tab-btn" id="tab-easy" onclick="switchMode('easy')">Easy</div>
+        <div class="mode-tab-btn" id="tab-medium" onclick="switchMode('medium')">Medium</div>
+        <div class="mode-tab-btn" id="tab-hard" onclick="switchMode('hard')">Hard</div>
+      </div>
+
+      <!-- বেট ইনপুট ও STAKE বাটন -->
+      <div class="stake-action-bar">
+        <div class="stake-values-col">
+          <div class="input-wrapper-inner">
+            <input type="number" id="stakeInputField" value="20" min="5" max="4999">
+            <span class="taka-symbol">৳</span>
+          </div>
+          <div class="range-bounds-text">min 5 ৳ - max 4999 ৳</div>
+        </div>
+
+        <button class="golden-stake-btn" id="mainExecuteBtn" onclick="onExecuteButtonClick()">STAKE</button>
+      </div>
+
+      <!-- ফুটার লিংকস -->
+      <div class="panel-footer-links">
+        <div class="footer-action-link" onclick="showInfoGuide()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          SETTINGS
+        </div>
+        <div class="footer-action-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          ONE-CLICK
+        </div>
+      </div>
+    </footer>
+
+    <!-- ৪. মোডাল -->
+    <div class="glass-modal-overlay" id="finishModal">
+      <div class="glass-modal-card">
+        <button class="modal-cross-btn" onclick="closeFinishModal()">✖</button>
+        <div class="modal-alert-title" id="finishTitle">ROUND ENDED</div>
+        <div class="modal-score-number" id="finishScore">0 ৳</div>
+        <div class="modal-expl-text" id="finishMsg">খাওয়া আপেল বের হয়েছে! পুনরায় খেলতে ✖ চেপে STAKE চাপুন।</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =======================================================
+       ১. FIREBASE REALTIME DATABASE SYNC (MATCHED WITH FD44)
+       ======================================================= */
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuqS2ujSIBbsUcdjg_gtZw0j67v4jguuM",
+      authDomain: "fd44-58291.firebaseapp.com",
+      databaseURL: "https://fd44-58291-default-rtdb.firebaseio.com",
+      projectId: "fd44-58291",
+      storageBucket: "fd44-58291.firebasestorage.app",
+      messagingSenderId: "854551788762",
+      appId: "1:854551788762:web:acb5b7994f1ac77255b9e3",
+      measurementId: "G-BJWS0YTBQV"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+    let activePhone = null;
+    let userBalance = 0.00;
+
+    function initUserDatabaseSync() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let phoneFound = urlParams.get('phone') || urlParams.get('user') || urlParams.get('uid');
+
+      if (!phoneFound) {
+        try {
+          if (window.parent && window.parent.user && window.parent.user.phone) {
+            phoneFound = window.parent.user.phone;
+          }
+        } catch(e) {}
+      }
+
+      if (!phoneFound) {
+        try {
+          phoneFound = localStorage.getItem('bd99_user');
+        } catch(e) {}
+      }
+
+      if (phoneFound) {
+        bindUserAccount(phoneFound);
+      } else {
+        database.ref('users').limitToLast(1).once('value', (snap) => {
+          if (snap.exists()) {
+            const data = snap.val();
+            const lastPhone = Object.keys(data)[0];
+            if (lastPhone) bindUserAccount(lastPhone);
+          }
+        });
+      }
+    }
+
+    function bindUserAccount(phone) {
+      activePhone = phone;
+      try { localStorage.setItem('bd99_user', phone); } catch(e) {}
+
+      database.ref('users/' + phone + '/balance').on('value', (snapshot) => {
+        if (snapshot.exists() && snapshot.val() !== null) {
+          userBalance = parseFloat(snapshot.val()) || 0;
+          syncBalanceDisplay();
+
+          try {
+            if (window.parent && window.parent.document) {
+              window.parent.document.querySelectorAll('.userBalance').forEach(e => {
+                e.innerText = userBalance.toFixed(2);
+              });
+            }
+          } catch(e) {}
+        }
+      });
+    }
+
+    function deductRealBalance(amount) {
+      userBalance = parseFloat((userBalance - amount).toFixed(2));
+      syncBalanceDisplay();
+
+      if (activePhone) {
+        database.ref('users/' + activePhone + '/balance').transaction((curr) => {
+          let val = parseFloat(curr);
+          if (isNaN(val)) return 0;
+          return Math.max(0, parseFloat((val - amount).toFixed(2)));
+        });
+
+        database.ref('users/' + activePhone + '/wager_left').transaction((curr) => {
+          let left = parseFloat(curr || 0) - amount;
+          return left < 0 ? 0 : parseFloat(left.toFixed(2));
+        });
+      }
+
+      try {
+        if (window.parent && window.parent !== window) {
+          if (window.parent.user) window.parent.user.balance = userBalance;
+          if (typeof window.parent.updateUI === 'function') window.parent.updateUI();
+          if (window.parent.document) {
+            window.parent.document.querySelectorAll('.userBalance').forEach(e => {
+              e.innerText = userBalance.toFixed(2);
+            });
+          }
+        }
+      } catch(e) {}
+    }
+
+    function addRealBalance(amount) {
+      if (amount <= 0) return;
+      userBalance = parseFloat((userBalance + amount).toFixed(2));
+      syncBalanceDisplay();
+
+      if (activePhone) {
+        database.ref('users/' + activePhone + '/balance').transaction((curr) => {
+          let val = parseFloat(curr || 0);
+          return parseFloat((val + amount).toFixed(2));
+        });
+      }
+
+      try {
+        if (window.parent && window.parent !== window) {
+          if (window.parent.user) window.parent.user.balance = userBalance;
+          if (typeof window.parent.updateUI === 'function') window.parent.updateUI();
+          if (window.parent.document) {
+            window.parent.document.querySelectorAll('.userBalance').forEach(e => {
+              e.innerText = userBalance.toFixed(2);
+            });
+          }
+        }
+      } catch(e) {}
+    }
+
+    /* =======================================================
+       ২. সাউন্ড ইঞ্জিন (Web Audio API)
+       ======================================================= */
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    function triggerTone(freq, form, duration) {
+      try {
+        if (audioContext.state === 'suspended') audioContext.resume();
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = form;
+        osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+        gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start();
+        osc.stop(audioContext.currentTime + duration);
+      } catch (err) {}
+    }
+
+    /* =======================================================
+       ৩. গেম রুলস এবং সুনির্দিষ্ট গুণক তালিকা
+       ======================================================= */
+    const ROWS_COUNT = 14;
+    let currentMode = 'normal';
+
+    const PROGRESSION_RATES = {
+      normal: {
+        hazardCount: 1,
+        rates: [1.15, 1.24, 1.35, 1.48, 1.63, 1.82, 2.05, 2.35, 2.75, 3.25, 3.90, 4.80, 6.00, 7.50]
+      },
+      easy: {
+        hazardCount: 2,
+        rates: [1.25, 1.40, 1.58, 1.78, 2.02, 2.30, 2.62, 2.98, 3.38, 3.80, 4.20, 4.55, 4.80, 5.00]
+      },
+      medium: {
+        hazardCount: 3,
+        rates: [1.35, 1.60, 1.95, 2.45, 3.15, 4.10, 5.40, 7.20, 9.80, 13.50, 17.50, 20.50, 23.00, 25.00]
+      },
+      hard: {
+        hazardCount: 4,
+        rates: [1.55, 2.10, 3.00, 4.50, 7.00, 11.50, 19.00, 32.00, 52.00, 78.00, 105.00, 125.00, 140.00, 150.00]
+      }
+    };
+
+    let roundActive = false;
+    let currentFloor = -1;
+    let activeWager = 20;
+    let hazardLocations = [];
+
+    const CARVED_TOKEN_SVG = `
+      <svg class="wood-carved-emblem" viewBox="0 0 44 44">
+        <path d="M22 6 L36 21 L28 21 L28 36 L16 36 L16 21 L8 21 Z" fill="#7a3713" stroke="#4d2109" stroke-width="1.8"/>
+        <path d="M22 10 L32 21 L26 21 L26 34 L18 34 L18 21 L12 21 Z" fill="#522409"/>
+        <path d="M15 28 C22 26 22 32 29 29" stroke="#16a085" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path d="M15 31 C22 29 22 35 29 32" stroke="#2ecc71" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      </svg>`;
+
+    const CRISP_APPLE_SVG = `
+      <svg width="68%" height="68%" viewBox="0 0 32 32">
+        <path d="M16 2 C17 5 19 6 21 6 C20 7 18 8 16 7" stroke="#2e7d32" stroke-width="2" fill="none"/>
+        <path d="M16 8 C11 3 4 8 4 16 C4 24 10 28 16 28 C22 28 28 24 28 16 C28 8 21 3 16 8 Z" fill="#e74c3c"/>
+        <ellipse cx="11" cy="13" rx="2.5" ry="5" fill="#ff7675" transform="rotate(-25 11 13)"/>
+      </svg>`;
+
+    const EATEN_CORE_SVG = `
+      <svg width="68%" height="68%" viewBox="0 0 32 32">
+        <path d="M16 3 C17 5 18 6 20 6" stroke="#4e342e" stroke-width="2" fill="none"/>
+        <path d="M16 7 C13 7 11 9 11 12 C13 13 13 19 11 20 C11 23 13 25 16 25 C19 25 21 23 21 20 C19 19 19 13 21 12 C21 9 19 7 16 7 Z" fill="#d7ccc8"/>
+        <circle cx="16" cy="13" r="1.5" fill="#3e2723"/>
+        <circle cx="16" cy="18" r="1.5" fill="#3e2723"/>
+      </svg>`;
+
+    const orchardGridBoard = document.getElementById('orchardGridBoard');
+    const userBalanceText = document.getElementById('userBalanceText');
+    const stakeInputField = document.getElementById('stakeInputField');
+    const mainExecuteBtn = document.getElementById('mainExecuteBtn');
+    const finishModal = document.getElementById('finishModal');
+
+    function createBoardLayout() {
+      orchardGridBoard.innerHTML = '';
+      const activeRates = PROGRESSION_RATES[currentMode].rates;
+
+      for (let r = 0; r < ROWS_COUNT; r++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'grid-row';
+        rowDiv.id = `floor-${r}`;
+
+        rowDiv.innerHTML = `
+          <div class="step-badge">${activeRates[r].toFixed(2)}x</div>
+          <div class="tiles-row-grid">
+            ${[0, 1, 2, 3, 4].map(c => `
+              <div class="wood-disc-item" onclick="onTilePress(${r}, ${c})" data-row="${r}" data-col="${c}">
+                <div class="wood-disc-shell">
+                  <div class="disc-surface disc-front">${CARVED_TOKEN_SVG}</div>
+                  <div class="disc-surface disc-back" id="back-face-${r}-${c}"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        orchardGridBoard.appendChild(rowDiv);
+      }
+    }
+
+    function switchMode(modeKey) {
+      if (roundActive) return;
+      currentMode = modeKey;
+      document.querySelectorAll('.mode-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${modeKey}`).classList.add('active');
+      createBoardLayout();
+      triggerTone(490, 'sine', 0.08);
+    }
+
+    function applyPreset(type) {
+      if (roundActive) return;
+      let val = parseInt(stakeInputField.value) || 5;
+      if (type === 'MIN') val = 5;
+      if (type === 'X2') val = Math.min(4999, Math.min(userBalance, val * 2));
+      if (type === 'HALF') val = Math.max(5, Math.floor(val / 2));
+      if (type === 'MAX') val = Math.min(4999, userBalance);
+      stakeInputField.value = val;
+      triggerTone(450, 'triangle', 0.05);
+    }
+
+    function onExecuteButtonClick() {
+      if (!roundActive) {
+        activeWager = parseInt(stakeInputField.value) || 5;
+
+        if (activeWager < 5) {
+          alert("মিনিমাম বেট ৫ ৳");
+          stakeInputField.value = 5;
+          return;
+        }
+        if (activeWager > 4999) {
+          alert("ম্যাক্সিমাম বেট ৪৯৯৯ ৳");
+          stakeInputField.value = 4999;
+          return;
+        }
+        if (activeWager > userBalance) {
+          alert("পর্যাপ্ত ব্যালেন্স নেই! দয়া করে আপনার অ্যাকাউন্টে ডিপোজিট করুন।");
+          return;
+        }
+
+        deductRealBalance(activeWager);
+
+        hazardLocations = [];
+        const badCount = PROGRESSION_RATES[currentMode].hazardCount;
+        for (let r = 0; r < ROWS_COUNT; r++) {
+          const randCols = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
+          hazardLocations[r] = new Set(randCols.slice(0, badCount));
+        }
+
+        roundActive = true;
+        currentFloor = 0;
+        createBoardLayout();
+        refreshRowHighlight();
+
+        mainExecuteBtn.innerText = "TAKE 0 ৳";
+        mainExecuteBtn.classList.remove('take-mode');
+        stakeInputField.disabled = true;
+        triggerTone(540, 'sine', 0.12);
+
+      } else {
+        if (currentFloor > 0) {
+          secureEarnings(false);
+        } else {
+          alert("কমপক্ষে ১টি সঠিক আপেল বেছে নিতে হবে!");
+        }
+      }
+    }
+
+    function refreshRowHighlight() {
+      for (let r = 0; r < ROWS_COUNT; r++) {
+        const rEl = document.getElementById(`floor-${r}`);
+        if (!rEl) continue;
+        if (r === currentFloor) {
+          rEl.className = 'grid-row active';
+          rEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else if (r < currentFloor) {
+          rEl.className = 'grid-row cleared';
+        } else {
+          rEl.className = 'grid-row';
+        }
+      }
+    }
+
+    function onTilePress(row, col) {
+      if (!roundActive || row !== currentFloor) return;
+
+      const tile = document.querySelector(`.wood-disc-item[data-row='${row}'][data-col='${col}']`);
+      const back = document.getElementById(`back-face-${row}-${col}`);
+      const isBad = hazardLocations[row].has(col);
+
+      tile.classList.add('revealed');
+
+      if (isBad) {
+        back.className = 'disc-surface disc-back eaten-apple';
+        back.innerHTML = EATEN_CORE_SVG;
+        triggerTone(145, 'sawtooth', 0.35);
+
+        revealEntireFloor(row);
+        finishRoundState(false);
+      } else {
+        back.className = 'disc-surface disc-back fresh-apple';
+        back.innerHTML = CRISP_APPLE_SVG;
+        triggerTone(620 + (row * 35), 'sine', 0.16);
+
+        const currentMultiplier = PROGRESSION_RATES[currentMode].rates[row];
+        const prospectiveWin = Math.round(activeWager * currentMultiplier);
+        mainExecuteBtn.innerText = `TAKE ${prospectiveWin} ৳`;
+        mainExecuteBtn.classList.add('take-mode');
+
+        if (currentFloor === ROWS_COUNT - 1) {
+          setTimeout(() => secureEarnings(true), 500);
+        } else {
+          currentFloor++;
+          refreshRowHighlight();
+        }
+      }
+    }
+
+    function revealEntireFloor(row) {
+      document.querySelectorAll(`.wood-disc-item[data-row='${row}']`).forEach(item => {
+        const c = parseInt(item.dataset.col);
+        const b = document.getElementById(`back-face-${row}-${c}`);
+        if (hazardLocations[row].has(c)) {
+          b.className = 'disc-surface disc-back eaten-apple';
+          b.innerHTML = EATEN_CORE_SVG;
+        } else {
+          b.className = 'disc-surface disc-back fresh-apple';
+          b.innerHTML = CRISP_APPLE_SVG;
+        }
+        item.classList.add('revealed');
+      });
+    }
+
+    function secureEarnings(isGrandJackpot = false) {
+      const activeRates = PROGRESSION_RATES[currentMode].rates;
+      const finalRate = isGrandJackpot ? activeRates[ROWS_COUNT - 1] : activeRates[currentFloor - 1];
+      const payout = Math.round(activeWager * finalRate);
+
+      addRealBalance(payout);
+      triggerTone(880, 'sine', 0.35);
+
+      triggerModal(
+        isGrandJackpot ? "🎉 ১৪ টি রো সম্পন্ন!" : "জিতলেন!",
+        `+${payout} ৳`,
+        "পয়েন্ট আপনার ব্যালেন্সে যোগ হয়েছে।"
+      );
+
+      restoreIdleState();
+    }
+
+    function finishRoundState(won) {
+      roundActive = false;
+      setTimeout(() => {
+        if (!won) {
+          triggerModal("রাউন্ড শেষ!", "0 ৳", "খাওয়া আপেল বের হয়েছে! পুনরায় খেলতে ✖ চেপে STAKE চাপুন।");
+        }
+        restoreIdleState();
+      }, 650);
+    }
+
+    function restoreIdleState() {
+      roundActive = false;
+      currentFloor = -1;
+      stakeInputField.disabled = false;
+      mainExecuteBtn.className = "golden-stake-btn";
+      mainExecuteBtn.innerText = "STAKE";
+    }
+
+    function triggerModal(title, score, msg) {
+      document.getElementById('finishTitle').innerText = title;
+      document.getElementById('finishScore').innerText = score;
+      document.getElementById('finishMsg').innerText = msg;
+      finishModal.classList.add('open');
+    }
+
+    function closeFinishModal() {
+      finishModal.classList.remove('open');
+    }
+
+    function syncBalanceDisplay() {
+      userBalanceText.innerText = `${userBalance.toFixed(2)} ৳`;
+    }
+
+    function showInfoGuide() {
+      alert(`নিয়মাবলী ও গুণক:\n
+• Normal: শুরু 1.15x (১টি খাওয়া আপেল)
+• Easy: শুরু 1.25x থেকে সর্বোচ্চ 5.00x (২টি খাওয়া আপেল)
+• Medium: শুরু 1.35x থেকে সর্বোচ্চ 25.00x (৩টি খাওয়া আপেল)
+• Hard: শুরু 1.55x থেকে সর্বোচ্চ 150.00x (৪টি খাওয়া আপেল)
+• মিনিমাম বেট ৫ ৳, সর্বোচ্চ ৪৯৯৯ ৳।`);
+    }
+
+    /* =======================================================
+       ৪. ক্যানভাস জোনাকি পোকা (Ambient Fireflies)
+       ======================================================= */
+    const fCanvas = document.getElementById('fireflyCanvas');
+    const fCtx = fCanvas.getContext('2d');
+    let flies = [];
+
+    function resizeFireflies() {
+      fCanvas.width = window.innerWidth;
+      fCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeFireflies);
+    resizeFireflies();
+
+    class Firefly {
+      constructor() { this.spawn(); }
+      spawn() {
+        this.x = Math.random() * fCanvas.width;
+        this.y = Math.random() * fCanvas.height;
+        this.radius = Math.random() * 2 + 0.8;
+        this.vx = (Math.random() - 0.5) * 0.35;
+        this.vy = -Math.random() * 0.45 - 0.15;
+        this.opacity = Math.random() * 0.6 + 0.2;
+      }
+      step() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.y < 0 || this.x < 0 || this.x > fCanvas.width) {
+          this.spawn();
+          this.y = fCanvas.height + 10;
+        }
+      }
+      draw() {
+        fCtx.beginPath();
+        fCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        fCtx.fillStyle = `rgba(180, 255, 100, ${this.opacity})`;
+        fCtx.shadowBlur = 8;
+        fCtx.shadowColor = '#a4fa5b';
+        fCtx.fill();
+        fCtx.shadowBlur = 0;
+      }
+    }
+
+    for (let i = 0; i < 24; i++) flies.push(new Firefly());
+
+    function loopFireflies() {
+      fCtx.clearRect(0, 0, fCanvas.width, fCanvas.height);
+      flies.forEach(f => { f.step(); f.draw(); });
+      requestAnimationFrame(loopFireflies);
+    }
+    loopFireflies();
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initUserDatabaseSync();
+      createBoardLayout();
+    });
+  </script>
+</body>
+</html>
